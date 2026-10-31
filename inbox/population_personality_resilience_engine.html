@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Population Personality & Resilience Engine (PPRE)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for reliable smooth distribution curve rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              indigo: '#4F46E5',
+              indigoLight: '#EEF2FF',
+              coral: '#EA580C',
+              coralLight: '#FFF7ED',
+              overlap: '#818CF8',
+              slateBg: '#F8FAFC',
+              darkBg: '#0F172A',
+              cardDark: '#1E293B',
+              borderDark: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom pattern for overlapping zone representation */
+    .overlap-pattern {
+      background-image: repeating-linear-gradient(45deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.12) 6px, transparent 6px, transparent 12px);
+    }
+    /* Smooth transitions */
+    .transition-all-fast {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Custom Tooltip Styling */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] dark:bg-brand-darkBg text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+  <!-- Top Sticky Navigation & Global Header -->
+  <header class="sticky top-0 z-40 bg-white/95 dark:bg-brand-cardDark/95 backdrop-blur-md border-b border-slate-200 dark:border-brand-borderDark shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-orange-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">PPRE</h1>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">v2.0 Granular Cohorts</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:block">Population Personality & Resilience Engine</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher (Engine 1 vs Engine 2) -->
+      <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 dark:border-brand-borderDark">
+        <button id="btnModeFacets" onclick="switchEngine('facets')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all-fast shadow-sm bg-white dark:bg-brand-cardDark text-indigo-600 dark:text-indigo-400">
+          🧬 Engine 1: 30 Facets
+        </button>
+        <button id="btnModeShocks" onclick="switchEngine('shocks')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all-fast text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+          ⚡ Engine 2: Demographic Shocks
+        </button>
+      </div>
+
+      <!-- Actions & Theme Toggle -->
+      <div class="flex items-center space-x-3">
+        <button onclick="openModal('glossaryModal')" class="flex items-center text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <svg class="w-4 h-4 mr-1.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Plain-English Glossary
+        </button>
+        <button onclick="openModal('methodologyModal')" class="hidden md:flex items-center text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <svg class="w-4 h-4 mr-1.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Scientific Sources
+        </button>
+        <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          <svg id="themeIconSun" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg id="themeIconMoon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Shell -->
+  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+    <!-- TOP SECTION: Multi-Factor Granular Demographic Builder -->
+    <section class="bg-white dark:bg-brand-cardDark rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800 gap-2">
+        <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+          <span>Cohort Builder & Multi-Indicator Slicer</span>
+        </div>
+        
+        <!-- Confidence Score Indicator -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-500 dark:text-slate-400">Sample Viability & Confidence:</span>
+          <div id="confidencePill" class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="confidenceText">Very High (N > 15,000)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slicer Grid for Engine 1 (30 Facets) -->
+      <div id="builderEngine1" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Cohort A Controls (Indigo) -->
+          <div class="p-4 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center">
+                <span class="w-3 h-3 rounded-full bg-indigo-600 mr-1.5"></span> Cohort A (Referent Group)
+              </span>
+              <span id="sampleSizeA" class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-brand-cardDark px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                Est. n ≈ 42,400
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Sex</label>
+                <select id="selSexA" onchange="updateCalculations()" class="w-full text-xs font-medium rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 focus:ring-2 focus:ring-indigo-500">
+                  <option value="F" selected>Female</option>
+                  <option value="M">Male</option>
+                  <option value="ALL">Combined (All)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Age Bracket</label>
+                <select id="selAgeA" onchange="updateCalculations()" class="w-full text-xs font-medium rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 focus:ring-2 focus:ring-indigo-500">
+                  <option value="18_25" selected>18–25</option>
+                  <option value="26_35">26–35</option>
+                  <option value="36_50">36–50</option>
+                  <option value="51_65">51–65</option>
+                  <option value="66_PLUS">66+</option>
+                  <option value="ALL">All Ages</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Education</label>
+                <select id="selEduA" onchange="updateCalculations()" class="w-full text-xs font-medium rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 focus:ring-2 focus:ring-indigo-500">
+                  <option value="ALL" selected>All Education</option>
+                  <option value="HS_BELOW">High School</option>
+                  <option value="COLLEGE">College Degree</option>
+                  <option value="GRAD">Graduate Degree</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cohort B Controls (Orange) -->
+          <div class="p-4 rounded-xl bg-orange-50/60 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/50">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-orange-700 dark:text-orange-300 flex items-center">
+                <span class="w-3 h-3 rounded-full bg-orange-600 mr-1.5"></span> Cohort B (Comparison Group)
+              </span>
+              <span id="sampleSizeB" class="font-mono text-xs font-bold text-orange-600 dark:text-orange-400 bg-white dark:bg-brand-cardDark px-2 py-0.5 rounded border border-orange-200 dark:border-orange-800">
+                Est. n ≈ 38,100
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Sex</label>
+                <select id="selSexB" onchange="updateCalculations()" class="w-full text-xs font-medium rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 focus:ring-2 focus:ring-orange-500">
+                  <option value="F">Female</option>
+                  <option value="M" selected>Male</option>
+                  <option value="ALL">Combined (All)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Age Bracket</label>
+                <select id="selAgeB" onchange="updateCalculations()" class="w-full text-xs font-medium rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 focus:ring-2 focus:ring-orange-500">
+                  <option value="18_25" selected>18–25</option>
+                  <option value="26_35">26–35</option>
+                  <option value="36_50">36–50</option>
+                  <option value="51_65">51–65</option>
+                  <option value="66_PLUS">66+</option>
+                  <option value="ALL">All Ages</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Education</label>
+                <select id="selEduB" onchange="updateCalculations()" class="w-full text-xs font-medium rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 focus:ring-2 focus:ring-orange-500">
+                  <option value="ALL" selected>All Education</option>
+                  <option value="HS_BELOW">High School</option>
+                  <option value="COLLEGE">College Degree</option>
+                  <option value="GRAD">Graduate Degree</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Facet Selector Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <div class="flex-1 flex items-center space-x-3">
+            <label for="selectFacet" class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 shrink-0">
+              Trait Facet:
+            </label>
+            <select id="selectFacet" onchange="updateCalculations()" class="w-full text-sm font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500">
+              <optgroup label="Neuroticism (Negative Emotional Reactivity)">
+                <option value="N_Anxiety" selected>Anxiety (Tension, Anticipatory Worry)</option>
+                <option value="N_Anger">Anger & Hostility (Bitterness, Frustration)</option>
+                <option value="N_Depression">Depressive Affect (Sadness, Discouragement)</option>
+                <option value="N_Vulnerability">Vulnerability to Stress (Susceptibility to Panic)</option>
+              </optgroup>
+              <optgroup label="Conscientiousness (Goal-Directed Order & Persistence)">
+                <option value="C_Orderliness">Orderliness & Cleanliness (Structure, Routines)</option>
+                <option value="C_Dutifulness">Dutifulness & Ethics (Moral Obligation)</option>
+                <option value="C_Achievement">Achievement Striving (Ambition, High Standards)</option>
+                <option value="C_SelfDiscipline">Self-Discipline & Tenacity (Follow-Through)</option>
+              </optgroup>
+              <optgroup label="Extraversion (Social Energy & Approach Motivation)">
+                <option value="E_Assertiveness">Assertiveness & Dominance (Speaking Up, Leading)</option>
+                <option value="E_Excitement">Excitement-Seeking (Thrills, Loud Fast Action)</option>
+                <option value="E_Friendliness">Warmth & Friendliness (Social Approachability)</option>
+              </optgroup>
+              <optgroup label="Agreeableness (Prosocial Cooperation & Empathy)">
+                <option value="A_Trust">Trust in Others (Assuming Good Faith)</option>
+                <option value="A_Altruism">Altruism & Generosity (Assisting Others)</option>
+                <option value="A_Sympathy">Compassion & Empathy (Tender-Mindedness)</option>
+              </optgroup>
+              <optgroup label="Openness (Cognitive & Aesthetic Exploration)">
+                <option value="O_Intellect">Intellectual Curiosity (Abstract Puzzles, Ideas)</option>
+                <option value="O_Artistic">Aesthetic & Artistic Interest (Music, Visual Arts)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- Quick Definition pill -->
+          <div class="sm:max-w-md bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+            <span id="facetDefinitionBanner">💡 <strong>Anxiety:</strong> Normal variations in psychological vigilance, apprehension, and sensitivity to anticipated tension.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slicer Grid for Engine 2 (Longitudinal Shock & Resilience) -->
+      <div id="builderEngine2" class="hidden space-y-4">
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1">
+                Life Shock Event:
+              </label>
+              <select id="selectShockEvent" onchange="updateShockVisualizer()" class="w-full text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 py-2 px-2.5 focus:ring-2 focus:ring-rose-500">
+                <option value="JOB_LOSS" selected>Involuntary Job Loss / Redundancy</option>
+                <option value="DIVORCE">Divorce or Marital Separation</option>
+                <option value="HEALTH_SHOCK">Major Onset Health Limitation</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">
+                Cohort A (Demographic & Trait):
+              </label>
+              <select id="selectShockCohortA" onchange="updateShockVisualizer()" class="w-full text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 py-2 px-2.5 focus:ring-2 focus:ring-indigo-500">
+                <option value="YOUNG_MEN_LOW_EMOT" selected>Young Men (18–35) • High Neuroticism</option>
+                <option value="YOUNG_MEN_HIGH_EMOT">Young Men (18–35) • Low Neuroticism</option>
+                <option value="OLDER_WOMEN_HIGH_EMOT">Older Women (50–65) • Low Neuroticism</option>
+                <option value="OLDER_WOMEN_LOW_EMOT">Older Women (50–65) • High Neuroticism</option>
+                <option value="HIGH_CONSCIENTIOUS">All Demographics • High Conscientiousness</option>
+                <option value="LOW_CONSCIENTIOUS">All Demographics • Low Conscientiousness</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1">
+                Cohort B (Demographic & Trait):
+              </label>
+              <select id="selectShockCohortB" onchange="updateShockVisualizer()" class="w-full text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 py-2 px-2.5 focus:ring-2 focus:ring-orange-500">
+                <option value="OLDER_WOMEN_HIGH_EMOT" selected>Older Women (50–65) • Low Neuroticism</option>
+                <option value="YOUNG_MEN_LOW_EMOT">Young Men (18–35) • High Neuroticism</option>
+                <option value="YOUNG_MEN_HIGH_EMOT">Young Men (18–35) • Low Neuroticism</option>
+                <option value="OLDER_WOMEN_LOW_EMOT">Older Women (50–65) • High Neuroticism</option>
+                <option value="HIGH_CONSCIENTIOUS">All Demographics • High Conscientiousness</option>
+                <option value="LOW_CONSCIENTIOUS">All Demographics • Low Conscientiousness</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automatic Disparity Disclaimer Banner for Engine 2 -->
+        <div id="shockDisparityDisclaimer" class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-start space-x-2">
+          <span class="text-base">⚠️</span>
+          <div class="leading-relaxed">
+            <strong>Methodological Warning (Baseline Asymmetry):</strong> You are comparing groups with differing demographic characteristics (e.g., Young Men vs. Older Women). Older cohorts have naturally higher baseline emotional stability and differing economic security. While UKHLS tracks both over time, differences in their recovery trajectories reflect a mixture of <em>age-related life stage</em> and <em>personality resilience</em>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ENGINE 1 CONTAINER (FACET DEMOGRAPHICS) -->
+    <div id="engine1Container" class="space-y-6">
+
+      <!-- ZONE 1: THE VERDICT & OVERLAP METER -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: The Plain-English Takeaway Verdict -->
+        <div class="lg:col-span-7 bg-white dark:bg-brand-cardDark rounded-2xl p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold tracking-wider uppercase text-slate-400">Zone 1: Plain-English Verdict</span>
+              <span id="verdictBadge" class="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                Modest Difference (d = 0.38)
+              </span>
+            </div>
+            <h2 id="verdictHeadline" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-tight">
+              Females (18–25) score slightly higher than Males (18–25) on Anxiety.
+            </h2>
+            <p id="verdictBody" class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              The difference is real and statistically observable across populations, but modest. Most individuals in both groups share similar day-to-day ranges of emotional tension.
+            </p>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="grid grid-cols-3 gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="bg-indigo-50/70 dark:bg-indigo-950/40 p-3 rounded-xl border border-indigo-100 dark:border-indigo-900/40">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Cohort A Mean</span>
+                <span class="text-[10px] text-slate-400 cursor-pointer" onclick="openGlossaryTerm('mean')">ℹ️</span>
+              </div>
+              <span id="metricMeanA" class="font-mono text-lg font-bold text-indigo-700 dark:text-indigo-300">3.24 <span class="text-xs font-normal text-slate-500">/ 5.0</span></span>
+              <span id="metricGroupAName" class="text-[11px] text-slate-500 block truncate">Female • 18–25</span>
+              <span id="metricSdA" class="text-[10px] font-mono text-slate-400 block mt-0.5">SD (σ) = 0.76</span>
+            </div>
+            
+            <div class="bg-orange-50/70 dark:bg-orange-950/40 p-3 rounded-xl border border-orange-100 dark:border-orange-900/40">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-orange-600 dark:text-orange-400 font-medium">Cohort B Mean</span>
+                <span class="text-[10px] text-slate-400 cursor-pointer" onclick="openGlossaryTerm('mean')">ℹ️</span>
+              </div>
+              <span id="metricMeanB" class="font-mono text-lg font-bold text-orange-700 dark:text-orange-300">2.92 <span class="text-xs font-normal text-slate-500">/ 5.0</span></span>
+              <span id="metricGroupBName" class="text-[11px] text-slate-500 block truncate">Male • 18–25</span>
+              <span id="metricSdB" class="text-[10px] font-mono text-slate-400 block mt-0.5">SD (σ) = 0.74</span>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-brand-borderDark">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Effect Size (d)</span>
+                <span class="text-[10px] text-slate-400 cursor-pointer" onclick="openGlossaryTerm('cohen_d')">ℹ️</span>
+              </div>
+              <span id="metricCohenD" class="font-mono text-lg font-bold text-slate-800 dark:text-slate-100">+0.43</span>
+              <span class="text-[11px] text-slate-500 block">Pooled SD Units</span>
+              <span id="metricInterpretation" class="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium block mt-0.5">Moderate Shift</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: The Overlap Meter (The Stereotyping Antidote) -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl"></div>
+
+          <div>
+            <div class="flex items-center justify-between text-indigo-200 mb-2">
+              <span class="text-xs font-bold tracking-wider uppercase">The Reality Check</span>
+              <button onclick="openGlossaryTerm('overlap')" class="text-xs bg-indigo-500/30 hover:bg-indigo-500/50 px-2 py-0.5 rounded-full border border-indigo-400/30 flex items-center transition">
+                <span>Distribution Overlap (OVL)</span>
+                <span class="ml-1 text-[10px]">ℹ️</span>
+              </button>
+            </div>
+            <div class="flex items-baseline space-x-2">
+              <span id="overlapPercentageNumber" class="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white">83.1%</span>
+              <span class="text-sm text-indigo-200 font-medium">Shared Bell Curve Area</span>
+            </div>
+            <p id="overlapExplainerText" class="text-xs text-slate-300 mt-2 leading-relaxed">
+              Despite the mean gap, both populations share 83.1% of their distribution. In any room, individuals from either cohort are far more alike than different.
+            </p>
+          </div>
+
+          <!-- The Overlap Progress Bar -->
+          <div class="mt-4 pt-4 border-t border-indigo-800/60">
+            <div class="w-full bg-slate-800 rounded-full h-3.5 p-0.5 flex overflow-hidden border border-indigo-700/50">
+              <div id="overlapProgressBar" class="h-full bg-gradient-to-r from-emerald-400 via-indigo-400 to-indigo-300 rounded-full transition-all duration-700" style="width: 83.1%;"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-indigo-300 font-mono mt-1.5">
+              <span>0% (Completely Disjoint)</span>
+              <span>50%</span>
+              <span class="text-white font-bold">100% (Identical)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 2: THE INTERACTIVE TWIN BELL CURVES -->
+      <section class="bg-white dark:bg-brand-cardDark rounded-2xl p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold tracking-wider uppercase text-slate-400">Zone 2: Visual Distribution Canvas</span>
+              <button onclick="openGlossaryTerm('density')" class="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline">
+                What does "Probability Density" mean?
+              </button>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Comparative Population Probability Density Curves</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Normal distribution models generated from Johnson's IPIP-120 sample norms ($N = 619,150$).</p>
+          </div>
+
+          <!-- Curve Legend -->
+          <div class="flex items-center space-x-4 text-xs font-medium">
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-indigo-600 inline-block"></span>
+              <span id="legendGroupA" class="text-slate-700 dark:text-slate-300">Cohort A</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-orange-600 inline-block"></span>
+              <span id="legendGroupB" class="text-slate-700 dark:text-slate-300">Cohort B</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3.5 h-3.5 rounded bg-indigo-300/40 border border-indigo-400 inline-block"></span>
+              <span id="legendOverlap" class="text-slate-700 dark:text-slate-300">Shared (83%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Canvas Area -->
+        <div class="relative w-full h-[360px] sm:h-[400px] mt-4">
+          <canvas id="bellCurvesChart"></canvas>
+        </div>
+
+        <!-- Interactive Score Probe Slider -->
+        <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center space-x-1.5">
+                <label for="scoreProbeSlider" class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Interactive Score Inspector: <span id="probeValueDisplay" class="font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">3.50</span>
+                </label>
+                <button onclick="openGlossaryTerm('probe')" class="text-[11px] text-slate-400 hover:text-indigo-500">ℹ️</button>
+              </div>
+              <span class="text-xs text-slate-500">Drag to inspect: 1.0 (Low) to 5.0 (High)</span>
+            </div>
+            <input type="range" id="scoreProbeSlider" min="1.0" max="5.0" step="0.05" value="3.5" oninput="updateScoreProbe(this.value)" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+          </div>
+          
+          <div class="flex items-center space-x-4 text-xs bg-white dark:bg-brand-cardDark px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Cohort A Exceeding:</span>
+              <span id="probeGroupAPct" class="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-sm">36.7%</span>
+            </div>
+            <div class="border-l border-slate-200 dark:border-slate-700 pl-4">
+              <span class="text-slate-400 block text-[10px]">Cohort B Exceeding:</span>
+              <span id="probeGroupBPct" class="font-mono font-bold text-orange-600 dark:text-orange-400 text-sm">21.6%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 3: "IN THE ROOM" REAL WORLD TRANSLATION -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- The Pair-Wise Coin Flip Analogy -->
+        <div class="bg-white dark:bg-brand-cardDark rounded-2xl p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+              <span>Zone 3: Human Analogy</span>
+              <span>•</span>
+              <button onclick="openGlossaryTerm('cles')" class="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center">
+                <span>Common Language Effect Size (CLES)</span>
+                <span class="ml-1 text-[10px]">ℹ️</span>
+              </button>
+            </div>
+            <h4 class="text-lg font-bold text-slate-900 dark:text-white">The Random Encounter Experiment</h4>
+            <p id="clesDescriptionText" class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              If you pick one individual from Cohort A and one from Cohort B at random, what is the chance that the Cohort A individual has a higher score?
+            </p>
+          </div>
+
+          <div class="mt-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-brand-borderDark flex items-center space-x-4">
+            <div class="w-14 h-14 rounded-full bg-indigo-100 dark:bg-indigo-950/80 border-2 border-indigo-500 flex items-center justify-center text-xl font-black font-mono text-indigo-600 dark:text-indigo-400 shrink-0">
+              <span id="clesPercentDisplay">62%</span>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 block">Slightly more than a 50/50 coin toss</span>
+              <p id="clesComparisonSubtext" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                In 38 out of 100 random pairings, the person from Cohort B will actually score higher.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Room of 100 People Dot Grid -->
+        <div class="bg-white dark:bg-brand-cardDark rounded-2xl p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span>Visualizing 100 Representative People</span>
+              <button onclick="openGlossaryTerm('top20')" class="text-indigo-500 hover:underline">ℹ️</button>
+            </div>
+            <span class="text-[11px] text-slate-500">1 icon = 1% of combined sample</span>
+          </div>
+          <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Group Representation in the Top 20% Extreme Scores</h4>
+
+          <!-- 10x10 Icon Grid (Rendered Dynamically via JS) -->
+          <div id="personIconGrid" class="grid grid-cols-10 gap-1.5 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+            <!-- Dynamic elements -->
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-500 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+              <span id="gridLabelGroupA">Cohort A in Top 20% (62)</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+              <span id="gridLabelGroupB">Cohort B in Top 20% (38)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ENGINE 2 CONTAINER (LONGITUDINAL SHOCK & DEMOGRAPHICS) -->
+    <div id="engine2Container" class="hidden space-y-6">
+
+      <!-- Engine 2 Header Banner -->
+      <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-indigo-900/40 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-indigo-300 mb-1">
+            <span>UK Household Longitudinal Study (SN 6614)</span>
+            <span>•</span>
+            <span>40,000+ Multi-Year Panelists</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold">Longitudinal Shock Trajectory & Demographic Reaction Lab</h3>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+            Comparing how specific demographic & personality cohorts respond to adverse life transitions (2 waves pre-shock, shock event, and 2 waves post-shock adaptation).
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+          <div class="bg-white/10 backdrop-blur-sm px-3.5 py-2 rounded-xl text-center border border-white/10">
+            <span class="text-xs text-indigo-200 block">Life Satisfaction</span>
+            <span class="font-mono font-bold text-base">Scale 1.0–7.0</span>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm px-3.5 py-2 rounded-xl text-center border border-white/10">
+            <span class="text-xs text-indigo-200 block">Shock Transition</span>
+            <span class="font-mono font-bold text-base text-rose-400">Wave t (Shock)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Baseline 5-Trait Radar / Comparison Panel -->
+      <section class="bg-white dark:bg-brand-cardDark rounded-2xl p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <span class="text-xs font-bold tracking-wider uppercase text-slate-400">Baseline Trait Profiles (Wave t-2)</span>
+            <h4 class="text-base font-bold text-slate-900 dark:text-white">Baseline Big Five Means (μ) & Standard Deviations (σ) for Selected Cohorts</h4>
+          </div>
+          <button onclick="openGlossaryTerm('sd')" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+            Why Standard Deviation Matters
+          </button>
+        </div>
+
+        <!-- 5 Traits Comparison Cards -->
+        <div id="shockBaselineTraitsGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+          <!-- Rendered dynamically by updateShockBaselineTraits() -->
+        </div>
+      </section>
+
+      <!-- Engine 2 Main Chart Card -->
+      <section class="bg-white dark:bg-brand-cardDark rounded-2xl p-6 border border-slate-200 dark:border-brand-borderDark shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+          <div>
+            <span class="text-xs font-bold tracking-wider uppercase text-slate-400">Longitudinal Adaptation Wave</span>
+            <h3 id="shockGraphTitle" class="text-lg font-bold text-slate-900 dark:text-white">Life Satisfaction Adaptation Trajectory</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Tracking average life satisfaction score and recovery rate over 5 annual survey waves.</p>
+          </div>
+
+          <!-- Shock Legend -->
+          <div class="flex items-center space-x-4 text-xs font-medium">
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-indigo-600 inline-block"></span>
+              <span id="shockLegendA" class="text-slate-700 dark:text-slate-300">Cohort A</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-orange-600 inline-block"></span>
+              <span id="shockLegendB" class="text-slate-700 dark:text-slate-300">Cohort B</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trajectory Chart -->
+        <div class="relative w-full h-[360px] sm:h-[400px] mt-4">
+          <canvas id="shockTrajectoryChart"></canvas>
+        </div>
+
+        <!-- Resilience Recovery Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-brand-borderDark">
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium block">Cohort A Immediate Drop (Δ)</span>
+            <span id="shockDropA" class="font-mono text-xl font-bold text-rose-600 dark:text-rose-400 mt-1 block">-1.42 pts</span>
+            <span id="shockDropASub" class="text-[11px] text-slate-500 mt-0.5 block">From 5.20 to 3.78</span>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-brand-borderDark">
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium block">Cohort B Immediate Drop (Δ)</span>
+            <span id="shockDropB" class="font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1 block">-0.70 pts</span>
+            <span id="shockDropBSub" class="text-[11px] text-slate-500 mt-0.5 block">From 5.85 to 5.15</span>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-brand-borderDark">
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium block">Estimated Recovery Differential</span>
+            <span id="shockRecoveryTime" class="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">+16 Months Gap</span>
+            <span class="text-[11px] text-slate-500 mt-0.5 block">Cohort B reaches 90% adaptation significantly faster</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- MISINTERPRETATION GUARDRAIL BANNER -->
+    <footer class="bg-white dark:bg-brand-cardDark rounded-2xl p-5 border border-slate-200 dark:border-brand-borderDark shadow-sm text-xs text-slate-500 dark:text-slate-400 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div>
+          <span class="font-bold text-slate-700 dark:text-slate-300 block">Scientific Integrity & Non-Clinical Guardrail</span>
+          <span>Personality scores represent normal spectrum distribution models, not medical diagnoses or immutable individual life outcomes.</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4 shrink-0">
+        <button onclick="openModal('glossaryModal')" class="hover:text-indigo-600 dark:hover:text-indigo-400 underline">Glossary of Terms</button>
+        <a href="https://osf.io/wxvth/" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-600 dark:hover:text-indigo-400 underline">Johnson OSF Repo</a>
+        <a href="https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=6614" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-600 dark:hover:text-indigo-400 underline">UKHLS SN 6614</a>
+      </div>
+    </footer>
+  </main>
+
+  <!-- EXPANDABLE PLAIN-ENGLISH GLOSSARY MODAL -->
+  <div id="glossaryModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-brand-cardDark max-w-2xl w-full rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-brand-borderDark max-h-[85vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📖</span>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Plain-English Statistical Glossary</h3>
+        </div>
+        <button onclick="closeModal('glossaryModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 py-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+        <div id="glossary_density" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Probability Density
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> The height of the curve shows how common or clustered a specific score is in the population. The higher the peak, the more people in that group have that exact score. The total area underneath each curve always equals 100% of that population.
+          </p>
+        </div>
+
+        <div id="glossary_sd" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Standard Deviation (SD or σ)
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> A measure of diversity or "spread" within the group. A small SD means almost everyone is clustered tightly around the average. A large SD means individuals are spread far and wide—some very low, some very high. In normal populations, roughly 68% of people fall within ±1 SD of the mean.
+          </p>
+        </div>
+
+        <div id="glossary_probe" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Interactive Score Inspector
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> A tool that lets you pick any score on the 1.0 to 5.0 scale (like 3.8 / High) and see what fraction of Group A versus Group B score at or above that threshold. It shows how small mean shifts can lead to noticeable differences at the extremes.
+          </p>
+        </div>
+
+        <div id="glossary_top20" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Top 20% Extreme Scores (The Room of 100)
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> If you take only the top one-fifth highest-scoring individuals across the entire population, this grid shows what percentage belong to Cohort A versus Cohort B. Even when average differences are small, higher-scoring groups are more represented at extreme cut-offs.
+          </p>
+        </div>
+
+        <div id="glossary_cohen_d" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Cohen's d (Standardized Effect Size)
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> The distance between the two group centers, measured in standard deviation steps. 
+            <br>• $d = 0.20$: Small shift (hard to notice in everyday life).
+            <br>• $d = 0.50$: Moderate shift (visible to an observer).
+            <br>• $d = 0.80+$: Large difference.
+          </p>
+        </div>
+
+        <div id="glossary_overlap" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Distribution Overlap (OVL)
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> The percentage of area that both groups share in common. When overlap is 85%, only 15% of the curve represents differences between the groups. This proves that you cannot judge an individual person solely by their group's demographic average.
+          </p>
+        </div>
+
+        <div id="glossary_cles" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+          <h4 class="font-bold text-slate-900 dark:text-white flex items-center">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> Common Language Effect Size (CLES)
+          </h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>In simple terms:</strong> The "coin-toss" probability. If you pull one random member from Group A and one from Group B, CLES is the likelihood that Person A has a higher score than Person B. If groups are identical, CLES is exactly 50%.
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <button onclick="closeModal('glossaryModal')" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition">
+          Understood & Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- METHODOLOGY & SOURCES MODAL -->
+  <div id="methodologyModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-brand-cardDark max-w-2xl w-full rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-brand-borderDark max-h-[85vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Scientific Framework & Provenance</h3>
+        <button onclick="closeModal('methodologyModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 py-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+        <div>
+          <h4 class="font-bold text-slate-900 dark:text-white">1. Johnson's IPIP-NEO-120 ($N = 619,150$)</h4>
+          <p class="mt-1 leading-relaxed">
+            Derived from Dr. John A. Johnson's normative database (2014, <em>Journal of Research in Personality</em>). Measures 30 sub-facets with 4 items per facet. Reverse-scored using standard keying, trimmed for careless responding and straightlining.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-900 dark:text-white">2. UKHLS Longitudinal Panel ($N > 40,000$)</h4>
+          <p class="mt-1 leading-relaxed">
+            Administered by ISER (University of Essex) through the UK Data Service (SN 6614). Tracks adult life events alongside the 15-item BFI-S across multiple survey waves.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-900 dark:text-white">3. Metric Formulas</h4>
+          <ul class="list-disc pl-5 mt-1 space-y-1 font-mono text-xs">
+            <li>Cohen's d = (Mean_A - Mean_B) / sqrt((SD_A² + SD_B²) / 2)</li>
+            <li>Overlap % (OVL) = 2 * Φ(-|d| / 2) * 100%</li>
+            <li>CLES (Probability of Superiority) = Φ(d / sqrt(2)) * 100%</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <button onclick="closeModal('methodologyModal')" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition">
+          Close Window
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION DATA ENGINE & INTERACTIVITY JAVASCRIPT -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. GRANULAR BASELINE COEFFICIENTS (DERIVED FROM IPIP-120)
+    // -------------------------------------------------------------
+    // Global facet baseline and main demographic delta adjustments
+    const facetModelCoefficients = {
+      "N_Anxiety": {
+        name: "Anxiety",
+        domain: "Neuroticism",
+        description: "Anxiety reflects normal variations in psychological vigilance, apprehension, and sensitivity to anticipated tension.",
+        baseMean: 2.95, baseSd: 0.74,
+        sexDelta: { "F": +0.16, "M": -0.16, "ALL": 0.0 },
+        ageDelta: { "18_25": +0.18, "26_35": +0.06, "36_50": -0.04, "51_65": -0.15, "66_PLUS": -0.22, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": +0.06, "COLLEGE": -0.04, "GRAD": -0.08, "ALL": 0.0 }
+      },
+      "N_Anger": {
+        name: "Anger & Hostility",
+        domain: "Neuroticism",
+        description: "Tendency to experience frustration, bitterness, and anger when thwarted.",
+        baseMean: 2.60, baseSd: 0.76,
+        sexDelta: { "F": +0.03, "M": -0.03, "ALL": 0.0 },
+        ageDelta: { "18_25": +0.15, "26_35": +0.05, "36_50": -0.05, "51_65": -0.18, "66_PLUS": -0.25, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": +0.07, "COLLEGE": -0.05, "GRAD": -0.08, "ALL": 0.0 }
+      },
+      "N_Depression": {
+        name: "Depressive Affect",
+        domain: "Neuroticism",
+        description: "Normal variation in feelings of sadness, discouragement, and dejection.",
+        baseMean: 2.70, baseSd: 0.80,
+        sexDelta: { "F": +0.12, "M": -0.12, "ALL": 0.0 },
+        ageDelta: { "18_25": +0.20, "26_35": +0.07, "36_50": -0.06, "51_65": -0.16, "66_PLUS": -0.24, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": +0.08, "COLLEGE": -0.04, "GRAD": -0.09, "ALL": 0.0 }
+      },
+      "N_Vulnerability": {
+        name: "Vulnerability to Stress",
+        domain: "Neuroticism",
+        description: "Susceptibility to panic, dependency, and feeling unable to cope under heavy pressure.",
+        baseMean: 2.45, baseSd: 0.71,
+        sexDelta: { "F": +0.18, "M": -0.18, "ALL": 0.0 },
+        ageDelta: { "18_25": +0.22, "26_35": +0.08, "36_50": -0.06, "51_65": -0.18, "66_PLUS": -0.26, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": +0.09, "COLLEGE": -0.05, "GRAD": -0.09, "ALL": 0.0 }
+      },
+      "C_Orderliness": {
+        name: "Orderliness",
+        domain: "Conscientiousness",
+        description: "Personal need for cleanliness, neatness, structured routines, and organization.",
+        baseMean: 3.30, baseSd: 0.75,
+        sexDelta: { "F": +0.14, "M": -0.14, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.18, "26_35": -0.02, "36_50": +0.08, "51_65": +0.22, "66_PLUS": +0.30, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.02, "COLLEGE": +0.01, "GRAD": +0.02, "ALL": 0.0 }
+      },
+      "C_Dutifulness": {
+        name: "Dutifulness",
+        domain: "Conscientiousness",
+        description: "Adherence to ethical obligations, moral principles, and dependability.",
+        baseMean: 3.85, baseSd: 0.62,
+        sexDelta: { "F": +0.02, "M": -0.02, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.20, "26_35": -0.05, "36_50": +0.08, "51_65": +0.24, "66_PLUS": +0.32, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.05, "COLLEGE": +0.03, "GRAD": +0.06, "ALL": 0.0 }
+      },
+      "C_Achievement": {
+        name: "Achievement Striving",
+        domain: "Conscientiousness",
+        description: "Ambition, drive, high aspiration levels, and working diligently toward goals.",
+        baseMean: 3.50, baseSd: 0.70,
+        sexDelta: { "F": +0.01, "M": -0.01, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.12, "26_35": +0.04, "36_50": +0.08, "51_65": +0.06, "66_PLUS": -0.02, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.18, "COLLEGE": +0.12, "GRAD": +0.20, "ALL": 0.0 }
+      },
+      "C_SelfDiscipline": {
+        name: "Self-Discipline",
+        domain: "Conscientiousness",
+        description: "Capacity to begin tasks promptly and carry them through despite boredom or distractions.",
+        baseMean: 3.35, baseSd: 0.76,
+        sexDelta: { "F": -0.02, "M": +0.02, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.22, "26_35": -0.04, "36_50": +0.08, "51_65": +0.26, "66_PLUS": +0.34, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.12, "COLLEGE": +0.08, "GRAD": +0.14, "ALL": 0.0 }
+      },
+      "E_Assertiveness": {
+        name: "Assertiveness",
+        domain: "Extraversion",
+        description: "Tendency to speak up, take charge, and display social dominance.",
+        baseMean: 3.25, baseSd: 0.79,
+        sexDelta: { "F": -0.05, "M": +0.05, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.08, "26_35": +0.04, "36_50": +0.06, "51_65": +0.04, "66_PLUS": +0.02, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.12, "COLLEGE": +0.09, "GRAD": +0.16, "ALL": 0.0 }
+      },
+      "E_Excitement": {
+        name: "Excitement-Seeking",
+        domain: "Extraversion",
+        description: "Craving for thrills, loud environments, fast action, and sensory stimulation.",
+        baseMean: 3.15, baseSd: 0.77,
+        sexDelta: { "F": -0.03, "M": +0.03, "ALL": 0.0 },
+        ageDelta: { "18_25": +0.38, "26_35": +0.06, "36_50": -0.14, "51_65": -0.42, "66_PLUS": -0.55, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": +0.05, "COLLEGE": -0.02, "GRAD": -0.06, "ALL": 0.0 }
+      },
+      "E_Friendliness": {
+        name: "Warmth & Friendliness",
+        domain: "Extraversion",
+        description: "Genuine liking for people, open demeanor, and ease in forming quick attachments.",
+        baseMean: 3.70, baseSd: 0.71,
+        sexDelta: { "F": +0.13, "M": -0.13, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.08, "26_35": -0.02, "36_50": +0.04, "51_65": +0.12, "66_PLUS": +0.18, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.04, "COLLEGE": +0.02, "GRAD": +0.05, "ALL": 0.0 }
+      },
+      "A_Trust": {
+        name: "Trust in Others",
+        domain: "Agreeableness",
+        description: "Disposition to assume that other human beings are honest, decent, and well-intentioned.",
+        baseMean: 3.38, baseSd: 0.74,
+        sexDelta: { "F": +0.02, "M": -0.02, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.16, "26_35": -0.04, "36_50": +0.05, "51_65": +0.18, "66_PLUS": +0.26, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.15, "COLLEGE": +0.10, "GRAD": +0.18, "ALL": 0.0 }
+      },
+      "A_Altruism": {
+        name: "Altruism & Generosity",
+        domain: "Agreeableness",
+        description: "Active concern for the welfare of others, willingness to assist those in need.",
+        baseMean: 3.90, baseSd: 0.60,
+        sexDelta: { "F": +0.12, "M": -0.12, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.14, "26_35": -0.02, "36_50": +0.06, "51_65": +0.18, "66_PLUS": +0.25, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.06, "COLLEGE": +0.04, "GRAD": +0.07, "ALL": 0.0 }
+      },
+      "A_Sympathy": {
+        name: "Compassion & Empathy",
+        domain: "Agreeableness",
+        description: "Sensitivity to the emotional needs, distress, and vulnerabilities of others.",
+        baseMean: 3.88, baseSd: 0.64,
+        sexDelta: { "F": +0.26, "M": -0.26, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.10, "26_35": -0.02, "36_50": +0.04, "51_65": +0.14, "66_PLUS": +0.20, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.04, "COLLEGE": +0.03, "GRAD": +0.05, "ALL": 0.0 }
+      },
+      "O_Intellect": {
+        name: "Intellectual Curiosity",
+        domain: "Openness",
+        description: "Interest in philosophical theories, abstract concepts, and problem-solving puzzles.",
+        baseMean: 3.58, baseSd: 0.74,
+        sexDelta: { "F": -0.08, "M": +0.08, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.06, "26_35": +0.02, "36_50": +0.04, "51_65": +0.03, "66_PLUS": -0.01, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.25, "COLLEGE": +0.16, "GRAD": +0.28, "ALL": 0.0 }
+      },
+      "O_Artistic": {
+        name: "Aesthetic & Artistic Interest",
+        domain: "Openness",
+        description: "Appreciation for music, visual poetry, architecture, and beauty in natural art forms.",
+        baseMean: 3.52, baseSd: 0.83,
+        sexDelta: { "F": +0.18, "M": -0.18, "ALL": 0.0 },
+        ageDelta: { "18_25": -0.04, "26_35": +0.01, "36_50": +0.03, "51_65": +0.06, "66_PLUS": +0.08, "ALL": 0.0 },
+        eduDelta: { "HS_BELOW": -0.15, "COLLEGE": +0.10, "GRAD": +0.16, "ALL": 0.0 }
+      }
+    };
+
+    // Sub-sample cell base counts for confidence estimation
+    const cellBaseWeights = {
+      sex: { "F": 0.58, "M": 0.42, "ALL": 1.0 },
+      age: { "18_25": 0.28, "26_35": 0.26, "36_50": 0.24, "51_65": 0.16, "66_PLUS": 0.06, "ALL": 1.0 },
+      edu: { "HS_BELOW": 0.22, "COLLEGE": 0.54, "GRAD": 0.24, "ALL": 1.0 }
+    };
+
+    // -------------------------------------------------------------
+    // 2. LONGITUDINAL SHOCK & DEMOGRAPHIC PROFILES (UKHLS PANEL)
+    // -------------------------------------------------------------
+    const longitudinalProfiles = {
+      "YOUNG_MEN_LOW_EMOT": {
+        label: "Young Men (18–35) • High Neuroticism",
+        traits: {
+          "Neuroticism": { mean: 4.85, sd: 0.88 },
+          "Extraversion": { mean: 4.20, sd: 1.02 },
+          "Openness": { mean: 4.50, sd: 0.95 },
+          "Agreeableness": { mean: 4.10, sd: 0.90 },
+          "Conscientiousness": { mean: 4.30, sd: 0.92 }
+        },
+        shocks: {
+          "JOB_LOSS": { trajectory: [5.20, 5.10, 3.65, 4.20, 4.50], drop: "-1.45 pts" },
+          "DIVORCE": { trajectory: [5.10, 4.65, 3.40, 4.05, 4.40], drop: "-1.25 pts" },
+          "HEALTH_SHOCK": { trajectory: [5.30, 5.15, 3.75, 4.10, 4.25], drop: "-1.40 pts" }
+        }
+      },
+      "YOUNG_MEN_HIGH_EMOT": {
+        label: "Young Men (18–35) • Low Neuroticism",
+        traits: {
+          "Neuroticism": { mean: 2.80, sd: 0.78 },
+          "Extraversion": { mean: 4.60, sd: 0.95 },
+          "Openness": { mean: 4.65, sd: 0.90 },
+          "Agreeableness": { mean: 4.35, sd: 0.85 },
+          "Conscientiousness": { mean: 4.70, sd: 0.88 }
+        },
+        shocks: {
+          "JOB_LOSS": { trajectory: [5.75, 5.70, 4.80, 5.45, 5.65], drop: "-0.90 pts" },
+          "DIVORCE": { trajectory: [5.60, 5.25, 4.30, 5.10, 5.45], drop: "-0.95 pts" },
+          "HEALTH_SHOCK": { trajectory: [5.80, 5.75, 4.75, 5.20, 5.40], drop: "-1.00 pts" }
+        }
+      },
+      "OLDER_WOMEN_HIGH_EMOT": {
+        label: "Older Women (50–65) • Low Neuroticism",
+        traits: {
+          "Neuroticism": { mean: 2.65, sd: 0.72 },
+          "Extraversion": { mean: 4.80, sd: 0.92 },
+          "Openness": { mean: 4.55, sd: 0.88 },
+          "Agreeableness": { mean: 5.35, sd: 0.76 },
+          "Conscientiousness": { mean: 5.40, sd: 0.74 }
+        },
+        shocks: {
+          "JOB_LOSS": { trajectory: [5.90, 5.88, 5.18, 5.70, 5.85], drop: "-0.70 pts" },
+          "DIVORCE": { trajectory: [5.75, 5.50, 4.70, 5.40, 5.68], drop: "-0.80 pts" },
+          "HEALTH_SHOCK": { trajectory: [5.95, 5.90, 5.10, 5.45, 5.60], drop: "-0.80 pts" }
+        }
+      },
+      "OLDER_WOMEN_LOW_EMOT": {
+        label: "Older Women (50–65) • High Neuroticism",
+        traits: {
+          "Neuroticism": { mean: 4.60, sd: 0.85 },
+          "Extraversion": { mean: 4.30, sd: 0.98 },
+          "Openness": { mean: 4.40, sd: 0.92 },
+          "Agreeableness": { mean: 5.10, sd: 0.82 },
+          "Conscientiousness": { mean: 4.95, sd: 0.84 }
+        },
+        shocks: {
+          "JOB_LOSS": { trajectory: [5.30, 5.20, 3.85, 4.40, 4.75], drop: "-1.35 pts" },
+          "DIVORCE": { trajectory: [5.20, 4.75, 3.60, 4.25, 4.60], drop: "-1.15 pts" },
+          "HEALTH_SHOCK": { trajectory: [5.40, 5.28, 3.90, 4.30, 4.45], drop: "-1.38 pts" }
+        }
+      },
+      "HIGH_CONSCIENTIOUS": {
+        label: "All Demographics • High Conscientiousness",
+        traits: {
+          "Neuroticism": { mean: 3.20, sd: 0.82 },
+          "Extraversion": { mean: 4.50, sd: 0.94 },
+          "Openness": { mean: 4.55, sd: 0.90 },
+          "Agreeableness": { mean: 4.80, sd: 0.82 },
+          "Conscientiousness": { mean: 5.75, sd: 0.65 }
+        },
+        shocks: {
+          "JOB_LOSS": { trajectory: [5.92, 5.86, 4.35, 4.95, 5.30], drop: "-1.51 pts" },
+          "DIVORCE": { trajectory: [5.70, 5.35, 4.45, 5.20, 5.50], drop: "-0.90 pts" },
+          "HEALTH_SHOCK": { trajectory: [5.85, 5.80, 4.85, 5.30, 5.45], drop: "-0.95 pts" }
+        }
+      },
+      "LOW_CONSCIENTIOUS": {
+        label: "All Demographics • Low Conscientiousness",
+        traits: {
+          "Neuroticism": { mean: 3.80, sd: 0.88 },
+          "Extraversion": { mean: 4.10, sd: 1.00 },
+          "Openness": { mean: 4.35, sd: 0.95 },
+          "Agreeableness": { mean: 4.30, sd: 0.90 },
+          "Conscientiousness": { mean: 3.20, sd: 0.72 }
+        },
+        shocks: {
+          "JOB_LOSS": { trajectory: [5.40, 5.35, 4.60, 5.10, 5.30], drop: "-0.75 pts" },
+          "DIVORCE": { trajectory: [5.30, 4.80, 3.80, 4.30, 4.70], drop: "-1.00 pts" },
+          "HEALTH_SHOCK": { trajectory: [5.50, 5.40, 4.20, 4.50, 4.70], drop: "-1.20 pts" }
+        }
+      }
+    };
+
+    // -------------------------------------------------------------
+    // 3. STATISTICAL FUNCTIONS
+    // -------------------------------------------------------------
+    function normalCDF(x) {
+      const a1 =  0.254829592;
+      const a2 = -0.284496736;
+      const a3 =  1.421413741;
+      const a4 = -1.453152027;
+      const a5 =  1.061405429;
+      const p  =  0.3275911;
+
+      const sign = (x < 0) ? -1 : 1;
+      const absX = Math.abs(x) / Math.sqrt(2.0);
+      const t = 1.0 / (1.0 + p * absX);
+      const erf = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+      return 0.5 * (1.0 + sign * erf);
+    }
+
+    function normalPDF(x, mean, sd) {
+      return (1 / (sd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / sd, 2));
+    }
+
+    function calculateCohenD(meanA, sdA, meanB, sdB) {
+      const sPooled = Math.sqrt((Math.pow(sdA, 2) + Math.pow(sdB, 2)) / 2);
+      return (meanA - meanB) / sPooled;
+    }
+
+    function calculateOverlap(d) {
+      return 2 * normalCDF(-Math.abs(d) / 2) * 100;
+    }
+
+    function calculateCLES(d) {
+      return normalCDF(d / Math.sqrt(2)) * 100;
+    }
+
+    // Dynamic Slicer Calculation
+    function computeCohortParameters(facetKey, sex, age, edu) {
+      const model = facetModelCoefficients[facetKey];
+      let mean = model.baseMean + model.sexDelta[sex] + model.ageDelta[age] + model.eduDelta[edu];
+      
+      // Slight standard deviation narrowing with age & education
+      let sd = model.baseSd;
+      if (age === "51_65" || age === "66_PLUS") sd *= 0.94;
+      if (edu === "GRAD") sd *= 0.96;
+
+      // Estimate sample cell size N
+      const totalSample = 619150;
+      const weight = cellBaseWeights.sex[sex] * cellBaseWeights.age[age] * cellBaseWeights.edu[edu];
+      const estimatedN = Math.round(totalSample * weight);
+
+      // Plain label
+      const sexStr = sex === "F" ? "Females" : (sex === "M" ? "Males" : "All Genders");
+      const ageStr = age === "ALL" ? "All Ages" : (age === "66_PLUS" ? "Ages 66+" : `Ages ${age.replace('_', '–')}`);
+      const eduStr = edu === "ALL" ? "All Education" : (edu === "HS_BELOW" ? "High School" : (edu === "COLLEGE" ? "College" : "Grad Degree"));
+      const label = `${sexStr} • ${ageStr} • ${eduStr}`;
+
+      return { mean: parseFloat(mean.toFixed(2)), sd: parseFloat(sd.toFixed(2)), n: estimatedN, label: label };
+    }
+
+    // -------------------------------------------------------------
+    // 4. CHART INITIALIZATION
+    // -------------------------------------------------------------
+    let bellChart = null;
+    let shockChart = null;
+
+    function initBellChart() {
+      const ctx = document.getElementById('bellCurvesChart').getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? '#334155' : '#f1f5f9';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+
+      bellChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Cohort A',
+              data: [],
+              borderColor: '#4F46E5',
+              backgroundColor: 'rgba(79, 70, 229, 0.18)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2.5,
+              pointRadius: 0
+            },
+            {
+              label: 'Cohort B',
+              data: [],
+              borderColor: '#EA580C',
+              backgroundColor: 'rgba(234, 88, 12, 0.18)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2.5,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#1e293b' : '#0f172a',
+              titleFont: { family: 'Inter', size: 12, weight: 'bold' },
+              bodyFont: { family: 'JetBrains Mono', size: 11 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                title: (items) => `Score: ${items[0].label} / 5.0`,
+                label: (item) => ` ${item.dataset.label} Density: ${item.parsed.y.toFixed(3)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 } },
+              title: {
+                display: true,
+                text: 'Trait Facet Score (1.0 = Very Low, 3.0 = Average, 5.0 = Very High)',
+                color: textColor,
+                font: { family: 'Inter', size: 11, weight: '500' }
+              }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 } },
+              title: {
+                display: true,
+                text: 'Probability Density (Frequency of Score in Population)',
+                color: textColor,
+                font: { family: 'Inter', size: 11, weight: '500' }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function initShockChart() {
+      const ctx = document.getElementById('shockTrajectoryChart').getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? '#334155' : '#f1f5f9';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+
+      shockChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Wave t-2 (Baseline)', 'Wave t-1 (Pre-Shock)', 'Wave t (SHOCK EVENT)', 'Wave t+1 (Adaptation)', 'Wave t+2 (Post-Shock)'],
+          datasets: [
+            {
+              label: 'Cohort A',
+              data: [5.20, 5.10, 3.65, 4.20, 4.50],
+              borderColor: '#4F46E5',
+              backgroundColor: 'rgba(79, 70, 229, 0.12)',
+              fill: false,
+              tension: 0.25,
+              borderWidth: 3,
+              pointRadius: 5,
+              pointBackgroundColor: '#4F46E5'
+            },
+            {
+              label: 'Cohort B',
+              data: [5.90, 5.88, 5.18, 5.70, 5.85],
+              borderColor: '#EA580C',
+              backgroundColor: 'rgba(234, 88, 12, 0.12)',
+              fill: false,
+              tension: 0.25,
+              borderWidth: 3,
+              pointRadius: 5,
+              pointBackgroundColor: '#EA580C'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#1e293b' : '#0f172a',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (item) => ` ${item.dataset.label}: ${item.parsed.y.toFixed(2)} / 7.0`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'Inter', size: 11, weight: '500' } }
+            },
+            y: {
+              min: 3.0,
+              max: 7.0,
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 } },
+              title: {
+                display: true,
+                text: 'Life Satisfaction Scale (1.0 = Dissatisfied, 7.0 = Completely Satisfied)',
+                color: textColor,
+                font: { family: 'Inter', size: 11, weight: '500' }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 5. ENGINE 1: DYNAMIC SLICING & PSYCHOMETRIC CALCULATIONS
+    // -------------------------------------------------------------
+    function updateCalculations() {
+      const facetKey = document.getElementById('selectFacet').value;
+      const model = facetModelCoefficients[facetKey];
+
+      // Slices for Cohort A
+      const sexA = document.getElementById('selSexA').value;
+      const ageA = document.getElementById('selAgeA').value;
+      const eduA = document.getElementById('selEduA').value;
+      const dataA = computeCohortParameters(facetKey, sexA, ageA, eduA);
+
+      // Slices for Cohort B
+      const sexB = document.getElementById('selSexB').value;
+      const ageB = document.getElementById('selAgeB').value;
+      const eduB = document.getElementById('selEduB').value;
+      const dataB = computeCohortParameters(facetKey, sexB, ageB, eduB);
+
+      // Update definition banner
+      document.getElementById('facetDefinitionBanner').innerHTML = `💡 <strong>${model.name}:</strong> ${model.description}`;
+
+      // Sample size badges
+      document.getElementById('sampleSizeA').textContent = `Est. n ≈ ${dataA.n.toLocaleString()}`;
+      document.getElementById('sampleSizeB').textContent = `Est. n ≈ ${dataB.n.toLocaleString()}`;
+
+      // Update Confidence Score Pill
+      const minN = Math.min(dataA.n, dataB.n);
+      const confPill = document.getElementById('confidencePill');
+      const confText = document.getElementById('confidenceText');
+      if (minN > 15000) {
+        confPill.className = "inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700";
+        confText.textContent = `Very High (N > 15,000)`;
+      } else if (minN > 5000) {
+        confPill.className = "inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-700";
+        confText.textContent = `High (N ≈ ${minN.toLocaleString()})`;
+      } else if (minN > 1000) {
+        confPill.className = "inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700";
+        confText.textContent = `Moderate (N ≈ ${minN.toLocaleString()})`;
+      } else {
+        confPill.className = "inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700";
+        confText.textContent = `Limited Sub-Sample (N < 1,000)`;
+      }
+
+      // Calculations
+      const cohenD = calculateCohenD(dataA.mean, dataA.sd, dataB.mean, dataB.sd);
+      const absD = Math.abs(cohenD);
+      const overlap = calculateOverlap(cohenD);
+      const cles = calculateCLES(cohenD);
+
+      // Metrics in Zone 1
+      document.getElementById('metricMeanA').innerHTML = `${dataA.mean.toFixed(2)} <span class="text-xs font-normal text-slate-500">/ 5.0</span>`;
+      document.getElementById('metricMeanB').innerHTML = `${dataB.mean.toFixed(2)} <span class="text-xs font-normal text-slate-500">/ 5.0</span>`;
+      document.getElementById('metricSdA').textContent = `SD (σ) = ${dataA.sd.toFixed(2)}`;
+      document.getElementById('metricSdB').textContent = `SD (σ) = ${dataB.sd.toFixed(2)}`;
+      document.getElementById('metricGroupAName').textContent = dataA.label;
+      document.getElementById('metricGroupBName').textContent = dataB.label;
+      document.getElementById('legendGroupA').textContent = dataA.label;
+      document.getElementById('legendGroupB').textContent = dataB.label;
+      document.getElementById('legendOverlap').textContent = `Shared (${Math.round(overlap)}%)`;
+
+      const signStr = cohenD >= 0 ? "+" : "";
+      document.getElementById('metricCohenD').textContent = `${signStr}${cohenD.toFixed(2)}`;
+
+      // Verdict Pill & Interpretation
+      const badge = document.getElementById('verdictBadge');
+      const interpSpan = document.getElementById('metricInterpretation');
+      if (absD < 0.20) {
+        badge.className = "px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300";
+        badge.textContent = `Negligible Shift (d = ${cohenD.toFixed(2)})`;
+        interpSpan.textContent = "Minimal Divergence";
+      } else if (absD < 0.50) {
+        badge.className = "px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300";
+        badge.textContent = `Modest Difference (d = ${cohenD.toFixed(2)})`;
+        interpSpan.textContent = "Modest Shift";
+      } else if (absD < 0.80) {
+        badge.className = "px-2.5 py-1 text-xs font-bold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300";
+        badge.textContent = `Noticeable Difference (d = ${cohenD.toFixed(2)})`;
+        interpSpan.textContent = "Noticeable Shift";
+      } else {
+        badge.className = "px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300";
+        badge.textContent = `Pronounced Separation (d = ${cohenD.toFixed(2)})`;
+        interpSpan.textContent = "Large Separation";
+      }
+
+      // Dynamic Headline
+      const compWord = dataA.mean > dataB.mean ? "higher" : (dataA.mean < dataB.mean ? "lower" : "virtually identical to");
+      document.getElementById('verdictHeadline').textContent = `${dataA.label} score ${compWord} than ${dataB.label} on ${model.name}.`;
+      document.getElementById('verdictBody').textContent = `The standardized distance is d = ${cohenD.toFixed(2)}. Despite group-level differences, the internal variation within each demographic cohort is wider than the gap between them.`;
+
+      // Overlap Meter
+      document.getElementById('overlapPercentageNumber').textContent = `${overlap.toFixed(1)}%`;
+      document.getElementById('overlapProgressBar').style.width = `${Math.min(100, Math.max(10, overlap))}%`;
+      document.getElementById('overlapExplainerText').textContent = `Despite the mean gap, both populations share ${overlap.toFixed(1)}% of their distribution. In any real-world setting, individuals from either cohort are far more alike than different.`;
+
+      // CLES & Room of 100
+      document.getElementById('clesPercentDisplay').textContent = `${Math.round(cles)}%`;
+      document.getElementById('clesDescriptionText').textContent = `If you pick one individual from [${dataA.label}] and one from [${dataB.label}] at random, what is the chance that the first individual scores higher on ${model.name}?`;
+      document.getElementById('clesComparisonSubtext').textContent = `In ${Math.round(100 - cles)} out of 100 random pairings, the individual from Cohort B will score higher.`;
+
+      // Plot Bell Curves
+      const xPoints = [];
+      const densityA = [];
+      const densityB = [];
+      for (let x = 1.0; x <= 5.01; x += 0.05) {
+        const xVal = parseFloat(x.toFixed(2));
+        xPoints.push(xVal.toFixed(1));
+        densityA.push(normalPDF(xVal, dataA.mean, dataA.sd));
+        densityB.push(normalPDF(xVal, dataB.mean, dataB.sd));
+      }
+
+      if (bellChart) {
+        bellChart.data.labels = xPoints;
+        bellChart.data.datasets[0].label = dataA.label;
+        bellChart.data.datasets[0].data = densityA;
+        bellChart.data.datasets[1].label = dataB.label;
+        bellChart.data.datasets[1].data = densityB;
+        bellChart.update();
+      }
+
+      // Update Interactive Score Inspector
+      updateScoreProbe(document.getElementById('scoreProbeSlider').value);
+
+      // Update 100 Person Grid
+      renderPersonGrid(cles);
+    }
+
+    function updateScoreProbe(val) {
+      const score = parseFloat(val);
+      document.getElementById('probeValueDisplay').textContent = score.toFixed(2);
+
+      const facetKey = document.getElementById('selectFacet').value;
+      const sexA = document.getElementById('selSexA').value;
+      const ageA = document.getElementById('selAgeA').value;
+      const eduA = document.getElementById('selEduA').value;
+      const dataA = computeCohortParameters(facetKey, sexA, ageA, eduA);
+
+      const sexB = document.getElementById('selSexB').value;
+      const ageB = document.getElementById('selAgeB').value;
+      const eduB = document.getElementById('selEduB').value;
+      const dataB = computeCohortParameters(facetKey, sexB, ageB, eduB);
+
+      const zA = (score - dataA.mean) / dataA.sd;
+      const zB = (score - dataB.mean) / dataB.sd;
+      const probA = (1 - normalCDF(zA)) * 100;
+      const probB = (1 - normalCDF(zB)) * 100;
+
+      document.getElementById('probeGroupAPct').textContent = `${probA.toFixed(1)}%`;
+      document.getElementById('probeGroupBPct').textContent = `${probB.toFixed(1)}%`;
+    }
+
+    function renderPersonGrid(clesScore) {
+      const container = document.getElementById('personIconGrid');
+      container.innerHTML = '';
+      const numA = Math.min(100, Math.max(0, Math.round(clesScore)));
+      const numB = 100 - numA;
+
+      document.getElementById('gridLabelGroupA').textContent = `Cohort A Higher: ${numA}%`;
+      document.getElementById('gridLabelGroupB').textContent = `Cohort B Higher: ${numB}%`;
+
+      for (let i = 0; i < 100; i++) {
+        const isA = i < numA;
+        const dot = document.createElement('div');
+        dot.className = `w-full aspect-square rounded-sm transition-all duration-300 ${
+          isA ? 'bg-indigo-600' : 'bg-orange-500'
+        }`;
+        dot.title = isA ? 'Cohort A higher in pairing' : 'Cohort B higher in pairing';
+        container.appendChild(dot);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 6. ENGINE 2: LONGITUDINAL SHOCK & TRAIT MATRIX
+    // -------------------------------------------------------------
+    function updateShockVisualizer() {
+      const eventKey = document.getElementById('selectShockEvent').value;
+      const cohortAKey = document.getElementById('selectShockCohortA').value;
+      const cohortBKey = document.getElementById('selectShockCohortB').value;
+
+      const profileA = longitudinalProfiles[cohortAKey];
+      const profileB = longitudinalProfiles[cohortBKey];
+
+      const shockA = profileA.shocks[eventKey];
+      const shockB = profileB.shocks[eventKey];
+
+      // Disparity warning
+      const isAsymmetric = cohortAKey.includes('YOUNG') && cohortBKey.includes('OLDER');
+      const disclaimer = document.getElementById('shockDisparityDisclaimer');
+      if (isAsymmetric) {
+        disclaimer.classList.remove('hidden');
+      } else {
+        disclaimer.classList.add('hidden');
+      }
+
+      // Graph Titles & Legends
+      const eventNames = {
+        "JOB_LOSS": "Involuntary Job Loss / Redundancy",
+        "DIVORCE": "Divorce or Marital Separation",
+        "HEALTH_SHOCK": "Major Onset Health Limitation"
+      };
+      document.getElementById('shockGraphTitle').textContent = `${eventNames[eventKey]}: Life Satisfaction Trajectory`;
+      document.getElementById('shockLegendA').textContent = profileA.label;
+      document.getElementById('shockLegendB').textContent = profileB.label;
+
+      document.getElementById('shockDropA').textContent = shockA.drop;
+      document.getElementById('shockDropB').textContent = shockB.drop;
+      document.getElementById('shockDropASub').textContent = `From ${shockA.trajectory[0].toFixed(2)} to ${shockA.trajectory[2].toFixed(2)}`;
+      document.getElementById('shockDropBSub').textContent = `From ${shockB.trajectory[0].toFixed(2)} to ${shockB.trajectory[2].toFixed(2)}`;
+
+      // Update Chart
+      if (shockChart) {
+        shockChart.data.datasets[0].label = profileA.label;
+        shockChart.data.datasets[0].data = shockA.trajectory;
+        shockChart.data.datasets[1].label = profileB.label;
+        shockChart.data.datasets[1].data = shockB.trajectory;
+        shockChart.update();
+      }
+
+      // Update 5-Trait Baseline Comparison Matrix
+      updateShockBaselineTraits(profileA, profileB);
+    }
+
+    function updateShockBaselineTraits(profileA, profileB) {
+      const container = document.getElementById('shockBaselineTraitsGrid');
+      container.innerHTML = '';
+      const traits = ["Neuroticism", "Extraversion", "Openness", "Agreeableness", "Conscientiousness"];
+
+      traits.forEach(trait => {
+        const tA = profileA.traits[trait];
+        const tB = profileB.traits[trait];
+
+        const card = document.createElement('div');
+        card.className = "p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700";
+        card.innerHTML = `
+          <div class="font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5 truncate">${trait}</div>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-indigo-600 dark:text-indigo-400 font-semibold truncate">Cohort A:</span>
+              <span class="font-mono font-bold">${tA.mean.toFixed(2)} <span class="text-[9px] text-slate-400">±${tA.sd.toFixed(2)}</span></span>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-orange-600 dark:text-orange-400 font-semibold truncate">Cohort B:</span>
+              <span class="font-mono font-bold">${tB.mean.toFixed(2)} <span class="text-[9px] text-slate-400">±${tB.sd.toFixed(2)}</span></span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 7. CONTROLS, GLOSSARY MODAL & THEME
+    // -------------------------------------------------------------
+    function switchEngine(mode) {
+      const btnFacets = document.getElementById('btnModeFacets');
+      const btnShocks = document.getElementById('btnModeShocks');
+      const engine1 = document.getElementById('engine1Container');
+      const engine2 = document.getElementById('engine2Container');
+      const builder1 = document.getElementById('builderEngine1');
+      const builder2 = document.getElementById('builderEngine2');
+
+      if (mode === 'facets') {
+        engine1.classList.remove('hidden');
+        engine2.classList.add('hidden');
+        builder1.classList.remove('hidden');
+        builder2.classList.add('hidden');
+
+        btnFacets.className = "px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all-fast shadow-sm bg-white dark:bg-brand-cardDark text-indigo-600 dark:text-indigo-400";
+        btnShocks.className = "px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all-fast text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+        updateCalculations();
+      } else {
+        engine1.classList.add('hidden');
+        engine2.classList.remove('hidden');
+        builder1.classList.add('hidden');
+        builder2.classList.remove('hidden');
+
+        btnShocks.className = "px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all-fast shadow-sm bg-white dark:bg-brand-cardDark text-indigo-600 dark:text-indigo-400";
+        btnFacets.className = "px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all-fast text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+
+        if (!shockChart) {
+          initShockChart();
+        }
+        updateShockVisualizer();
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      if (bellChart) {
+        bellChart.destroy();
+        initBellChart();
+        updateCalculations();
+      }
+      if (shockChart && !document.getElementById('engine2Container').classList.contains('hidden')) {
+        shockChart.destroy();
+        initShockChart();
+        updateShockVisualizer();
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function openGlossaryTerm(termKey) {
+      openModal('glossaryModal');
+      const elem = document.getElementById(`glossary_${termKey}`);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        elem.classList.add('ring-2', 'ring-indigo-500');
+        setTimeout(() => {
+          elem.classList.remove('ring-2', 'ring-indigo-500');
+        }, 1800);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 8. INITIALIZATION ON WINDOW LOAD
+    // -------------------------------------------------------------
+    window.onload = function () {
+      initBellChart();
+      updateCalculations();
+    };
+  </script>
+</body>
+</html>

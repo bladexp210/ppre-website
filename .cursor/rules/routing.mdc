@@ -1,0 +1,20 @@
+---
+description: Route durables; keep the always-on prefix short; load named paths only
+alwaysApply: true
+---
+
+# Routing + prefix tax
+
+When something durable emerges, route it. Do not inflate always-on memory from habit.
+
+| Layer | Home | Use when |
+| :--- | :--- | :--- |
+| **C** | Product lessons / project SoT (`REPLACE_WITH_PRODUCT_LESSONS_PATH`) | Product-only footgun |
+| **A** | User harness dir (`~/.cursor`) | Short always-on pins only |
+| **B** | Shared knowledge hub (`REPLACE_WITH_HUB_INBOX_OR_WIKI`) | Reusable across projects; human triages |
+
+**Prefix tax:** A new `alwaysApply` rule rides in every request. Default is a skill or a named path. Add Layer A only when the pin must be always-on.
+
+**Load:** named paths only. Do not dump the knowledge tree into context.
+
+**Promote:** human triage. Do not auto-canonize.

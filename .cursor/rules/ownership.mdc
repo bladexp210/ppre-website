@@ -1,0 +1,29 @@
+---
+description: Builder ownership rituals with AI agents — not end-user crisis UX
+alwaysApply: true
+---
+
+# Ownership
+
+Authorship is not ownership. Green tests / fast agent diffs without explain-back = risk signal.
+
+## Standing rules
+
+1. **Accidental vs skill-bearing friction.** Remove env/bootstrap/CI toil; keep verification, generation-before-prompt on unmastered core, one-layer-down exits.
+2. **Mode:** Acceleration (already own the logic) = OK to go fast. Exploration (unknown) = sketch/types/tests first, then generate, then verify.
+3. **Chat-until-green hard-stop:** after **two** blind error→agent→apply loops, pause; human or agent must use debugger/trace/logs before more agent fixes.
+4. **Multi-file agent changes:** before merge, explain-back **≥3 state mutations** without relying on chat summary alone.
+5. **One-layer-down:** prefer inspectable exits (SQL plan, raw CI/IAM, network waterfall, agent traces). Do not hide failures behind summary-only errors when learning/ownership matters.
+6. **Core domains** (schema, auth, payments, security): human-written intent before large generation.
+7. **Real surface:** Verify the thing the human is looking at (running app, PR checks, the open browser tab). Do not declare done on a parallel process, port, or chat summary.
+
+## Do not
+
+- Apply these rituals to end-user crisis or flooded-state UX.
+- Moralize “no AI” or hand-roll everything.
+- Enforce long manual-debug timers during true sev-1 MTTR emergencies.
+- Treat LOC / PR velocity / commit-ownership % as competence.
+
+## Agent behavior
+
+When proposing or applying non-trivial generated changes, briefly prompt ownership: what to sketch first, what to verify on the real surface, or what to explain-back — without blocking trivial Acceleration work the human already owns.

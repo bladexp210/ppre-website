@@ -1,0 +1,1 @@
+bash -c 'set -o pipefail; curl -fsSL --max-time 20 https://insights.sakina.app | grep -Eiq "how do .+ compare|room of a hundred"'

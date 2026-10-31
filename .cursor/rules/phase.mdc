@@ -1,0 +1,22 @@
+---
+description: Problem tree, cadence on each deliverable, and one-move loops
+alwaysApply: true
+---
+
+# Phase machine
+
+Full contract: `AGENTS.md`. Session pointer: `STATE.md`. Map: `docs/problem-tree.md`.
+
+At the start of every chat, print the problem tree's now-node and the C4 stack. Then one loop, then stop.
+
+One discovery pass is one move (breadth OR depth OR priority), then stop. Do not chain moves in the same turn.
+
+Cadence lives on the node: unset, linear, agile, or hybrid. Hybrid names define-now children and discover-as-we-go children. Until that node's cadence is set, do not open a child and do not link a C4 scope.
+
+Code is not a C4 scope. Stack depth max is 3. A deferred sibling has no C4 link.
+
+If the root link is empty, follow "The architecture link" checklist in `AGENTS.md`. The problem tree already says ready. STATE may still say framed. The tree wins. Do not leave the link empty for that reason.
+
+Repair stays in phase 3 and fixes code, not the tree and not this framework. When the stop hook says this is the last repair, the next step is a lesson draft under `docs/learn/`. Do not start a third repair.
+
+Do not send a trace. Product observability and workflow Langfuse stay unset until the human accepts them in `docs/observability.md`. Langfuse is recommended, not called.

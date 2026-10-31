@@ -1,0 +1,22 @@
+# Raw database. Too large to store in git. The decision record stays in the docs.
+data/ipip120.sqlite
+
+# Same dataset as a CSV. GitHub rejects files over 100 MB.
+data/ipip120.csv
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+
+# Dependencies and local environments
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# OS and editor clutter
+.DS_Store
+*.swp
