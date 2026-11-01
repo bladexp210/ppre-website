@@ -16,7 +16,7 @@ This file locates decisions. It does not copy them. If a sentence also appears i
 | Failure log | `docs/c4/ppre-context.md` |
 | Raw database location | `docs/c4/ppre-context.md` |
 | Deploy exclusion of the raw database | `docs/c4/ppre-deploy.md` |
-| VPS address and DNS records still to add | `docs/c4/ppre-deploy.md` |
+| VPS address, DNS, and the sakinati.app certificate | `docs/c4/ppre-deploy.md` |
 | Blueprint (accepted) | `docs/c4/ppre-website-blueprint.md` |
 | Answer file schema (accepted) | `docs/c4/ppre-answer-schema.md` |
 | Requirements | `docs/nfr.md` |
