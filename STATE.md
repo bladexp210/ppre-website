@@ -58,4 +58,4 @@ See docs/index.md.
 
 ## Next
 
-Cadence on the root is linear. The architecture link is `ppre-website`. The open scope is that container at phase 3, Build. Mohamed accepted the blueprint on 31 Oct 2026. Build has not been started. Repair cannot start. See docs/index.md.
+Cadence on the root is linear. The architecture link is `ppre-website`. The open scope is that container at phase 3, Build. Mohamed accepted the blueprint on 31 Oct 2026. Build has not been started. The live check failed twice because `insights.sakina.app` has no address. Do not start a third repair of that check. See docs/index.md.

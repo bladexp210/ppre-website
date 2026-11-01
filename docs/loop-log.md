@@ -173,6 +173,12 @@ start: ppre-website | lesson | repair attempt 2 failed; host insights.sakina.app
 end: ppre-website | lesson | draft docs/learn/live-check-needs-dns.md; check left unchanged; no third repair
 start: ppre-website | context | human asked to record the VPS address and the DNS still to add
 end: ppre-website | context | written in docs/c4/ppre-deploy.md; context and index point there; DNS not changed
+start: ppre-website | lesson | human asked for a README from the committed tree
+end: ppre-website | lesson | README.md written at the repo root; not committed
+start: ppre-website | lesson | repair stopped; Namecheap records are on sakinati.app
+end: ppre-website | lesson | live-check draft updated; check left on insights.sakina.app; no third repair
+start: ppre-website | context | human asked to document the server work and push it
+end: ppre-website | context | deploy note records sakinati.app, the certificate, and the kernel; STATE says do not start a third repair
 start: ppre-website | context | human said the event name’s first part is the target
 end: ppre-website | context | first part is a facet or a trait; index already pointed at the context file
 start: ppre-website | context | human chose Umami error tracking for the failure log
